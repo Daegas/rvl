@@ -1,7 +1,6 @@
 import re
 import json
 import pathlib
-from time import sleep
 from utils import *
 from slugify import slugify
 from get_contents import GetContents
@@ -10,11 +9,11 @@ class BaseParser(GetContents):
 
     BOOKS_REGEX = r'<book>.+?</book>'
     FIRST_SLUG_NEW_TESTAMENT = 'mateo'
-    START_BOOKS = 0
-    END_BOOKS = 1           # Pick just n books -> get_raw_books()[1]
+    START_BOOKS = 10
+    END_BOOKS = None           # Pick just n books -> get_raw_books()[1]
     START_CHAPTERS = 0
     END_CHAPTERS = None     # Pick a few chapters activate sleep when removing None for all
-    SLEEP = False           #To prevent get banned from server
+    SLEEP = 5           #If isn't on caché waits n second to make the requests, to prevent weird activity detection 
     RESULT_ROOT_PATH = f'{pathlib.Path(__file__).parent.parent}/bibles/'
 
     _replacements = {
@@ -31,6 +30,11 @@ class BaseParser(GetContents):
         'fix-n-tilde': {
             'regex': r'&ntilde;',
             'replacement': 'ñ',
+            'flags': 0
+        },
+        'fix-n-tilde': {
+            'regex': r'&deg;',
+            'replacement': '',
             'flags': 0
         },
         'extra-info': {
@@ -63,6 +67,11 @@ class BaseParser(GetContents):
 			'replacement': '',
 			'flags': 0
 		},
+        'weird-spaces': {
+            'regex': r'\r\n',
+            'replacement': ' ',
+			'flags': 0
+        }
     }
 
     def clean_content(self, content):
@@ -81,7 +90,7 @@ class BaseParser(GetContents):
         for raw_book in self.get_raw_books()[self.START_BOOKS:self.END_BOOKS]:
             book['raw-name'] = raw_book
             book['name'] = re.sub('(<[^<]+?>)|;|,', '', raw_book)
-            book['slug'] = slugify(book['name'])
+            book['slug'] = slugify(re.sub(r'&.*?;', '', book['name']))
             if self.FIRST_SLUG_NEW_TESTAMENT == book['slug']: new_testament = True
             book['testament'] = 'Nuevo Testamento' if new_testament else 'Antiguo Testamento'
             book['capitulos'] = self.get_chapters(raw_book)
@@ -104,16 +113,15 @@ class BaseParser(GetContents):
 
             self._content = self._content.replace(chapter_link, '')
             for i in range(len(parts)):
-                if self.SLEEP: sleep(3)
-                parsed = self.parse_chapters(parts[i], book_content)
+                parsed = self.parse_chapters(self.SLEEP, parts[i], book_content)
                 chapters[i] = parsed
 
         return chapters
     
-    def parse_chapters(self, raw_chapter_url, book):
+    def parse_chapters(self, sleep, raw_chapter_url, book):
         source_root_path = self._source
         chapter_url = source_root_path.replace('_INDEX.HTM', '') + re.sub('>\d+</a>\.', '', raw_chapter_url).strip()
-        response = GetContents.get_response(self, chapter_url, 1).text
+        response = GetContents.get_response(self, chapter_url, sleep_t=sleep).text
         chapter_content = self.clean_content(response)
         return self.get_versicles(chapter_content)
 

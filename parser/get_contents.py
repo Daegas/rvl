@@ -1,6 +1,7 @@
 import os
 import sys
 import html
+from time import sleep
 import requests
 import hashlib
 import pathlib
@@ -16,12 +17,13 @@ class GetContents(object):
 		# self._content = html.unescape(self._response.text) 
 		self._content = self.clean_content(self._content)
 
-	def get_response(self, url, retries=5):
+	def get_response(self, url, retries=5, sleep_t = 0):
 		if self.get_response_from_cache(url):
 			print(f'Working with cached version')
 			return self.get_response_from_cache(url)
 
 		try:
+			sleep(sleep_t)
 			response = requests.get(url)
 			self.cache_response(url, response)
 		except requests.exceptions.Timeout:
