@@ -9,13 +9,12 @@ import pickle
 class GetContents(object):
 	CACHE_PATH = f'{pathlib.Path(__file__).parent.parent}/tmp/response-cache'
 
-	def __init__(self, source):
+	def __init__(self, source, result_path):
 		self._source = source
-		self._response = self.get_response(self._source)
-		self._content = self._response.text
+		self._result_path = result_path
+		self._content = self.get_response(self._source).text
 		# self._content = html.unescape(self._response.text) 
-		self._cleaned_content = self.clean_content(self._content)
-		self._processable_content = self._cleaned_content
+		self._content = self.clean_content(self._content)
 
 	def get_response(self, url, retries=5):
 		if self.get_response_from_cache(url):
@@ -52,11 +51,3 @@ class GetContents(object):
 	def content(self):
 		return self._content
 
-	def cleaned_content(self):
-		return self._cleaned_content
-
-	def clean_content(self, content):
-		raise NotImplementedError('clean_content() function must be implemented')
-
-	def get_parsed_bible():
-		raise NotImplementedError('get_parsed_bible() function must be implemented')

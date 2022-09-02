@@ -1,14 +1,13 @@
-import re
-import json
-import itertools
-from slugify import slugify
 from base_parser import BaseParser
 
+
 class Bible1909Parser(BaseParser):
+
+	RESULT_PATH = 'bible1090/'
+	SOURCE = 'http://www.intratext.com/IXT/ESL0021/_INDEX.HTM'
 	
-	def __init__(self, source):
-		super(Bible1909Parser, self).__init__(source)
-		self._processable_content = self._cleaned_content
+	def __init__(self):
+		super(Bible1909Parser, self).__init__(self.SOURCE, self.RESULT_PATH)
 
 	
 
