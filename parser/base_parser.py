@@ -8,10 +8,10 @@ from get_contents import GetContents
 class BaseParser(GetContents):
 
     BOOKS_REGEX = r'<book>.+?</book>'
-    FIRST_SLUG_NEW_TESTAMENT = 'mateo'
-    START_BOOKS = 10
-    END_BOOKS = None           # Pick just n books -> get_raw_books()[1]
-    START_CHAPTERS = 0
+    FIRST_SLUG_NEW_TESTAMENT = 'el-santo-evangelio-segun-san-mateo' #
+    START_BOOKS = 39
+    END_BOOKS = None           # Pick just n books -> get_raw_books()[1] None for all indexmateo = 39 indexapocalipsis=65
+    START_CHAPTERS = None
     END_CHAPTERS = None     # Pick a few chapters activate sleep when removing None for all
     SLEEP = 5           #If isn't on caché waits n second to make the requests, to prevent weird activity detection 
     RESULT_ROOT_PATH = f'{pathlib.Path(__file__).parent.parent}/bibles/'
@@ -84,26 +84,29 @@ class BaseParser(GetContents):
         return parsed_bible
 
     def parse_books(self):
-        book = {}
+        bible = {}
 
-        new_testament = False
+        new_testament = True if self.START_BOOKS > 39 else False
+
         for raw_book in self.get_raw_books()[self.START_BOOKS:self.END_BOOKS]:
+            book = {}
             book['raw-name'] = raw_book
             book['name'] = re.sub('(<[^<]+?>)|;|,', '', raw_book)
             book['slug'] = slugify(re.sub(r'&.*?;', '', book['name']))
             if self.FIRST_SLUG_NEW_TESTAMENT == book['slug']: new_testament = True
             book['testament'] = 'Nuevo Testamento' if new_testament else 'Antiguo Testamento'
             book['capitulos'] = self.get_chapters(raw_book)
+            bible.update({book['slug'] : book})
             self.save_file(book)
-        
-        return book
+            
+        return bible
 
     def get_raw_books(self):
         return re.findall(self.BOOKS_REGEX, self._content)
     
     def get_chapters(self, book_content):
         chapters = {}
-        regex = r'{}\s*<ul\stype=square><li><font\ssize=1>\s*(.*?)(?=<br><br>)'.format(re.escape(book_content))
+        regex = r'{}\s*<ul\stype=square><li><font\ssize=1>\s*(.*?)(?=(<br><br>)|(</li></ul></li></ul></font>))'.format(re.escape(book_content))
         chapter_link = re.search(regex, self._content, re.DOTALL | re.IGNORECASE)
 
         if chapter_link:
