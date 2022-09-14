@@ -13,7 +13,10 @@ class GetContents(object):
 	def __init__(self, source, result_path):
 		self._source = source
 		self._result_path = result_path
-		self._content = self.get_response(self._source).text
+		if self.is_file(self._source):
+			print(f'Working with file')
+		else:
+			self._content = self.get_response(self._source).text
 		# self._content = html.unescape(self._response.text) 
 		self._content = self.clean_content(self._content)
 
@@ -21,6 +24,8 @@ class GetContents(object):
 		if self.get_response_from_cache(url):
 			print(f'Working with cached version')
 			return self.get_response_from_cache(url)
+
+		
 
 		try:
 			sleep(sleep_t)
@@ -49,6 +54,15 @@ class GetContents(object):
 		file = pathlib.Path(f'{self.CACHE_PATH}/{key}.data')
 		
 		return pickle.loads(file.read_bytes()) if file.exists() else ''
+
+	def is_file(self, path):
+		file = pathlib.Path(path)
+		if file.exists():
+			self._content = open(file, 'r')
+			self._content = self._content.read()
+			return self._content
+		else:
+			return False
 
 	def content(self):
 		return self._content
